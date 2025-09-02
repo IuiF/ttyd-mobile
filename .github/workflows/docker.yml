@@ -35,15 +35,16 @@ jobs:
       - name: Determine docker tags
         id: docker_tag
         run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           case $GITHUB_REF in
             refs/tags/*)
               TAG_NAME=${GITHUB_REF#refs/tags/}
-              echo "DOCKER_TAG=ghcr.io/${{ github.repository }}:${TAG_NAME}" >> $GITHUB_ENV
-              echo "ALPINE_TAG=ghcr.io/${{ github.repository }}:${TAG_NAME}-alpine" >> $GITHUB_ENV
+              echo "DOCKER_TAG=ghcr.io/${REPO_LOWER}:${TAG_NAME}" >> $GITHUB_ENV
+              echo "ALPINE_TAG=ghcr.io/${REPO_LOWER}:${TAG_NAME}-alpine" >> $GITHUB_ENV
               ;;
             *)
-              echo "DOCKER_TAG=ghcr.io/${{ github.repository }}:latest" >> $GITHUB_ENV
-              echo "ALPINE_TAG=ghcr.io/${{ github.repository }}:alpine" >> $GITHUB_ENV
+              echo "DOCKER_TAG=ghcr.io/${REPO_LOWER}:latest" >> $GITHUB_ENV
+              echo "ALPINE_TAG=ghcr.io/${REPO_LOWER}:alpine" >> $GITHUB_ENV
           esac
       - name: build/push docker image
         uses: docker/build-push-action@v6
