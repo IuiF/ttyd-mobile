@@ -76,7 +76,7 @@ function addEventListener(target: EventTarget, type: string, listener: EventList
     return toDisposable(() => target.removeEventListener(type, listener));
 }
 
-function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T {
+function debounce<T extends (...args: never[]) => void>(func: T, wait: number): T {
     let timeout: number;
     return ((...args: Parameters<T>) => {
         const later = () => {
@@ -213,7 +213,7 @@ export class Xterm {
         );
         // デバウンス付きリサイズ処理
         const debouncedFit = debounce(() => fitAddon.fit(), 100);
-        
+
         // Visual Viewport API対応（モバイルブラウザの動的ビューポート）
         if ('visualViewport' in window && window.visualViewport) {
             const viewport = window.visualViewport;
@@ -225,17 +225,16 @@ export class Xterm {
                 }
                 debouncedFit();
             };
-            
+
             register(addEventListener(viewport, 'resize', viewportHandler));
             register(addEventListener(viewport, 'scroll', viewportHandler));
-            
+
             // 初期化時にも実行
             viewportHandler();
         } else {
             // フォールバック: 通常のwindow.resize
             register(addEventListener(window, 'resize', debouncedFit));
         }
-        
         register(addEventListener(window, 'beforeunload', this.onWindowUnload));
     }
 
