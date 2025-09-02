@@ -76,6 +76,18 @@ function addEventListener(target: EventTarget, type: string, listener: EventList
     return toDisposable(() => target.removeEventListener(type, listener));
 }
 
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T {
+    let timeout: number;
+    return ((...args: Parameters<T>) => {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = window.setTimeout(later, wait);
+    }) as T;
+}
+
 export class Xterm {
     private disposables: IDisposable[] = [];
     private textEncoder = new TextEncoder();
@@ -199,7 +211,31 @@ export class Xterm {
                 this.overlayAddon?.showOverlay('\u2702', 200);
             })
         );
-        register(addEventListener(window, 'resize', () => fitAddon.fit()));
+        // デバウンス付きリサイズ処理
+        const debouncedFit = debounce(() => fitAddon.fit(), 100);
+        
+        // Visual Viewport API対応（モバイルブラウザの動的ビューポート）
+        if ('visualViewport' in window && window.visualViewport) {
+            const viewport = window.visualViewport;
+            const viewportHandler = () => {
+                const container = document.getElementById('terminal-container');
+                if (container) {
+                    // 動的ビューポート高さに応じてコンテナサイズを調整
+                    container.style.height = `${viewport.height}px`;
+                }
+                debouncedFit();
+            };
+            
+            register(addEventListener(viewport, 'resize', viewportHandler));
+            register(addEventListener(viewport, 'scroll', viewportHandler));
+            
+            // 初期化時にも実行
+            viewportHandler();
+        } else {
+            // フォールバック: 通常のwindow.resize
+            register(addEventListener(window, 'resize', debouncedFit));
+        }
+        
         register(addEventListener(window, 'beforeunload', this.onWindowUnload));
     }
 
